@@ -1,164 +1,107 @@
-use ::libc;
 use ::c2rust_bitfields;
+use ::libc;
+use chrono::prelude::*;
+use rand::prelude::*;
+use std::env;
+use xrono;
+
 extern "C" {
     pub type _GData;
     pub type _GVariant;
-    fn strlen(_: *const libc::c_char) -> libc::c_ulong;
-    fn g_ptr_array_new_with_free_func(
-        element_free_func: GDestroyNotify,
-    ) -> *mut GPtrArray;
+    fn g_ptr_array_new_with_free_func(element_free_func: GDestroyNotify) -> *mut GPtrArray;
     fn g_ptr_array_add(array: *mut GPtrArray, data: gpointer);
-    fn g_set_error(
-        err: *mut *mut GError,
-        domain: GQuark,
-        code: gint,
-        format: *const gchar,
-        _: ...
-    );
-    fn qsort(
-        __base: *mut libc::c_void,
-        __nmemb: size_t,
-        __size: size_t,
-        __compar: __compar_fn_t,
-    );
+    fn g_set_error(err: *mut *mut GError, domain: GQuark, code: i32, format: *const u8, _: ...);
+    fn qsort(__base: *mut libc::c_void, __nmemb: u64, __size: u64, __compar: __compar_fn_t);
     fn g_date_new() -> *mut GDate;
     fn g_date_new_dmy(day: GDateDay, month: GDateMonth, year: GDateYear) -> *mut GDate;
-    fn g_date_valid(date: *const GDate) -> gboolean;
+    fn g_date_valid(date: *const GDate) -> bool;
     fn g_date_get_month(date: *const GDate) -> GDateMonth;
     fn g_date_get_year(date: *const GDate) -> GDateYear;
     fn g_date_get_day(date: *const GDate) -> GDateDay;
-    fn g_getenv(variable: *const gchar) -> *const gchar;
-    fn g_free(mem: gpointer);
-    fn g_malloc0(n_bytes: gsize) -> gpointer;
-    fn g_malloc0_n(n_blocks: gsize, n_block_bytes: gsize) -> gpointer;
-    fn g_log(
-        log_domain: *const gchar,
-        log_level: GLogLevelFlags,
-        format: *const gchar,
-        _: ...
-    );
+    fn g_getenv(variable: *const u8) -> *const u8;
+    fn g_log(log_domain: *const u8, log_level: GLogLevelFlags, format: *const u8, _: ...);
     fn g_return_if_fail_warning(
-        log_domain: *const libc::c_char,
-        pretty_function: *const libc::c_char,
-        expression: *const libc::c_char,
+        log_domain: *const u8,
+        pretty_function: *const u8,
+        expression: *const u8,
     );
-    fn g_random_int() -> guint32;
-    fn g_str_has_prefix(str: *const gchar, prefix: *const gchar) -> gboolean;
-    fn g_ascii_strtod(nptr: *const gchar, endptr: *mut *mut gchar) -> gdouble;
-    fn g_ascii_strtoll(
-        nptr: *const gchar,
-        endptr: *mut *mut gchar,
-        base: guint,
-    ) -> gint64;
-    fn g_strdup(str: *const gchar) -> *mut gchar;
-    fn g_strdup_printf(format: *const gchar, _: ...) -> *mut gchar;
-    fn g_memdup2(mem: gconstpointer, byte_size: gsize) -> gpointer;
-    fn g_strcmp0(str1: *const libc::c_char, str2: *const libc::c_char) -> libc::c_int;
+    fn g_ascii_strtod(nptr: *const u8, endptr: *mut *mut u8) -> f32;
+    fn g_ascii_strtoll(nptr: *const u8, endptr: *mut *mut u8, base: u64) -> i64;
+    fn g_strdup(str: *const u8) -> *mut u8;
+    fn g_strdup_printf(format: *const u8, _: ...) -> *mut u8;
+    fn g_memdup2(mem: gconstpointer, byte_size: u64) -> gpointer;
     fn g_assertion_message(
-        domain: *const libc::c_char,
-        file: *const libc::c_char,
-        line: libc::c_int,
-        func: *const libc::c_char,
-        message: *const libc::c_char,
+        domain: *const u8,
+        file: *const u8,
+        line: i32,
+        func: *const u8,
+        message: *const u8,
     );
     fn g_assertion_message_expr(
-        domain: *const libc::c_char,
-        file: *const libc::c_char,
-        line: libc::c_int,
-        func: *const libc::c_char,
-        expr: *const libc::c_char,
+        domain: *const u8,
+        file: *const u8,
+        line: i32,
+        func: *const u8,
+        expr: *const u8,
     ) -> !;
     fn g_type_check_instance_cast(
         instance: *mut GTypeInstance,
         iface_type: GType,
     ) -> *mut GTypeInstance;
-    fn g_type_check_instance_is_a(
-        instance: *mut GTypeInstance,
-        iface_type: GType,
-    ) -> gboolean;
-    fn g_object_notify(object: *mut GObject, property_name: *const gchar);
+    fn g_type_check_instance_is_a(instance: *mut GTypeInstance, iface_type: GType) -> bool;
+    fn g_object_notify(object: *mut GObject, property_name: *const u8);
     fn g_object_ref(object: gpointer) -> gpointer;
     fn g_object_unref(object: gpointer);
     fn g_io_error_quark() -> GQuark;
     fn fp_image_get_minutiae(self_0: *mut FpImage) -> *mut GPtrArray;
-    fn fp_print_get_type() -> GType;
-    fn fp_print_get_finger(print: *mut FpPrint) -> FpFinger;
-    fn fp_print_get_username(print: *mut FpPrint) -> *const gchar;
-    fn fp_print_get_enroll_date(print: *mut FpPrint) -> *const GDate;
-    fn fp_print_set_finger(print: *mut FpPrint, finger: FpFinger);
-    fn fp_print_set_username(print: *mut FpPrint, username: *const gchar);
-    fn fp_print_set_enroll_date(print: *mut FpPrint, enroll_date: *const GDate);
-    fn sort_x_y(_: *const libc::c_void, _: *const libc::c_void) -> libc::c_int;
+    fn sort_x_y(_: *const libc::c_void, _: *const libc::c_void) -> i32;
     fn lfs2nist_minutia_XYT(
-        _: *mut libc::c_int,
-        _: *mut libc::c_int,
-        _: *mut libc::c_int,
+        _: *mut i32,
+        _: *mut i32,
+        _: *mut i32,
         _: *const MINUTIA,
-        _: libc::c_int,
-        _: libc::c_int,
+        _: i32,
+        _: i32,
     );
-    fn bozorth_to_gallery(
-        _: libc::c_int,
-        _: *mut xyt_struct,
-        _: *mut xyt_struct,
-    ) -> libc::c_int;
-    fn bozorth_probe_init(_: *mut xyt_struct) -> libc::c_int;
-    fn fpi_device_error_new_msg(
-        error: FpDeviceError,
-        msg: *const gchar,
-        _: ...
-    ) -> *mut GError;
+    fn bozorth_to_gallery(_: i32, _: *mut xyt_struct, _: *mut xyt_struct) -> i32;
+    fn bozorth_probe_init(_: *mut xyt_struct) -> i32;
+    fn fpi_device_error_new_msg(error: FpDeviceError, msg: *const u8, _: ...) -> *mut GError;
 }
-pub type size_t = libc::c_ulong;
-pub type guint8 = libc::c_uchar;
-pub type guint16 = libc::c_ushort;
-pub type gint32 = libc::c_int;
-pub type guint32 = libc::c_uint;
-pub type gint64 = libc::c_long;
-pub type gsize = libc::c_ulong;
-pub type gchar = libc::c_char;
-pub type gint = libc::c_int;
-pub type gboolean = gint;
-pub type guint = libc::c_uint;
-pub type gdouble = libc::c_double;
 pub type gpointer = *mut libc::c_void;
 pub type gconstpointer = *const libc::c_void;
-pub type GDestroyNotify = Option::<unsafe extern "C" fn(gpointer) -> ()>;
+//pub type GDestroyNotify = Option<unsafe extern "C" fn(gpointer) -> ()>;
+
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct _GPtrArray {
     pub pdata: *mut gpointer,
-    pub len: guint,
+    pub len: u64,
 }
 pub type GPtrArray = _GPtrArray;
-pub type GQuark = guint32;
+pub type GQuark = u32;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct _GError {
     pub domain: GQuark,
-    pub code: gint,
-    pub message: *mut gchar,
+    pub code: i32,
+    pub message: *mut u8,
 }
 pub type GError = _GError;
-pub type __compar_fn_t = Option::<
-    unsafe extern "C" fn(*const libc::c_void, *const libc::c_void) -> libc::c_int,
->;
+pub type __compar_fn_t =
+    Option<unsafe extern "C" fn(*const libc::c_void, *const libc::c_void) -> i32>;
 pub type GData = _GData;
-pub type GDateYear = guint16;
-pub type GDateDay = guint8;
+pub type GDateYear = u16;
+pub type GDateDay = u8;
 #[derive(Copy, Clone, BitfieldStruct)]
-#[repr(C)]
 pub struct _GDate {
-    #[bitfield(name = "julian_days", ty = "guint", bits = "0..=31")]
-    #[bitfield(name = "julian", ty = "guint", bits = "32..=32")]
-    #[bitfield(name = "dmy", ty = "guint", bits = "33..=33")]
-    #[bitfield(name = "day", ty = "guint", bits = "34..=39")]
-    #[bitfield(name = "month", ty = "guint", bits = "40..=43")]
-    #[bitfield(name = "year", ty = "guint", bits = "44..=59")]
+    #[bitfield(name = "julian_days", ty = "u64", bits = "0..=31")]
+    #[bitfield(name = "julian", ty = "u64", bits = "32..=32")]
+    #[bitfield(name = "dmy", ty = "u64", bits = "33..=33")]
+    #[bitfield(name = "day", ty = "u64", bits = "34..=39")]
+    #[bitfield(name = "month", ty = "u64", bits = "40..=43")]
+    #[bitfield(name = "year", ty = "u64", bits = "44..=59")]
     pub julian_days_julian_dmy_day_month_year: [u8; 8],
 }
 pub type GDate = _GDate;
-pub type GDateMonth = libc::c_uint;
+pub type GDateMonth = u64;
 pub const G_DATE_DECEMBER: GDateMonth = 12;
 pub const G_DATE_NOVEMBER: GDateMonth = 11;
 pub const G_DATE_OCTOBER: GDateMonth = 10;
@@ -173,7 +116,7 @@ pub const G_DATE_FEBRUARY: GDateMonth = 2;
 pub const G_DATE_JANUARY: GDateMonth = 1;
 pub const G_DATE_BAD_MONTH: GDateMonth = 0;
 pub type GVariant = _GVariant;
-pub type GLogLevelFlags = libc::c_int;
+pub type GLogLevelFlags = i32;
 pub const G_LOG_LEVEL_MASK: GLogLevelFlags = -4;
 pub const G_LOG_LEVEL_DEBUG: GLogLevelFlags = 128;
 pub const G_LOG_LEVEL_INFO: GLogLevelFlags = 64;
@@ -184,29 +127,26 @@ pub const G_LOG_LEVEL_ERROR: GLogLevelFlags = 4;
 pub const G_LOG_FLAG_FATAL: GLogLevelFlags = 2;
 pub const G_LOG_FLAG_RECURSION: GLogLevelFlags = 1;
 pub type GDate_autoptr = *mut GDate;
-pub type GType = gsize;
+pub type GType = u64;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct _GTypeClass {
     pub g_type: GType,
 }
 pub type GTypeClass = _GTypeClass;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct _GTypeInstance {
     pub g_class: *mut GTypeClass,
 }
 pub type GTypeInstance = _GTypeInstance;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct _GObject {
     pub g_type_instance: GTypeInstance,
-    pub ref_count: guint,
+    pub ref_count: u64,
     pub qdata: *mut GData,
 }
 pub type GObject = _GObject;
 pub type GInitiallyUnowned = _GObject;
-pub type C2RustUnnamed = libc::c_uint;
+pub type C2RustUnnamed = u64;
 pub const G_IO_ERROR_NO_SUCH_DEVICE: C2RustUnnamed = 47;
 pub const G_IO_ERROR_MESSAGE_TOO_LARGE: C2RustUnnamed = 46;
 pub const G_IO_ERROR_NOT_CONNECTED: C2RustUnnamed = 45;
@@ -256,58 +196,59 @@ pub const G_IO_ERROR_IS_DIRECTORY: C2RustUnnamed = 3;
 pub const G_IO_ERROR_EXISTS: C2RustUnnamed = 2;
 pub const G_IO_ERROR_NOT_FOUND: C2RustUnnamed = 1;
 pub const G_IO_ERROR_FAILED: C2RustUnnamed = 0;
+
 #[derive(Copy, Clone)]
-#[repr(C)]
-pub struct fp_minutia {
-    pub x: libc::c_int,
-    pub y: libc::c_int,
-    pub ex: libc::c_int,
-    pub ey: libc::c_int,
-    pub direction: libc::c_int,
-    pub reliability: libc::c_double,
-    pub type_0: libc::c_int,
-    pub appearing: libc::c_int,
-    pub feature_id: libc::c_int,
-    pub nbrs: *mut libc::c_int,
-    pub ridge_counts: *mut libc::c_int,
-    pub num_nbrs: libc::c_int,
+pub struct Minutia {
+    pub x: i32,
+    pub y: i32,
+    pub ex: i32,
+    pub ey: i32,
+    pub direction: i32,
+    pub reliability: f32,
+    pub type_0: i32,
+    pub appearing: i32,
+    pub feature_id: i32,
+    pub nbrs: *mut i32,
+    pub ridge_counts: *mut i32,
+    pub num_nbrs: i32,
 }
+
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct _FpImage {
     pub parent: GObject,
-    pub width: guint,
-    pub height: guint,
-    pub ppmm: gdouble,
+    pub width: u64,
+    pub height: u64,
+    pub ppmm: f32,
     pub flags: FpiImageFlags,
-    pub data: *mut guint8,
-    pub binarized: *mut guint8,
+    pub data: *mut u8,
+    pub binarized: *mut u8,
     pub minutiae: *mut GPtrArray,
-    pub ref_count: guint,
+    pub ref_count: u64,
 }
-pub type FpiImageFlags = libc::c_uint;
+pub type FpiImageFlags = u64;
 pub const FPI_IMAGE_PARTIAL: FpiImageFlags = 8;
 pub const FPI_IMAGE_COLORS_INVERTED: FpiImageFlags = 4;
 pub const FPI_IMAGE_H_FLIPPED: FpiImageFlags = 2;
 pub const FPI_IMAGE_V_FLIPPED: FpiImageFlags = 1;
 pub type FpImage = _FpImage;
+
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct _FpPrint {
     pub parent_instance: GInitiallyUnowned,
     pub type_0: FpiPrintType,
-    pub driver: *mut gchar,
-    pub device_id: *mut gchar,
-    pub device_stored: gboolean,
+    pub driver: *mut u8,
+    pub device_id: *mut u8,
+    pub device_stored: bool,
     pub image: *mut FpImage,
     pub finger: FpFinger,
-    pub username: *mut gchar,
-    pub description: *mut gchar,
+    pub username: *mut u8,
+    pub description: *mut u8,
     pub enroll_date: *mut GDate,
     pub data: *mut GVariant,
     pub prints: *mut GPtrArray,
 }
-pub type FpFinger = libc::c_uint;
+
+pub type FpFinger = u64;
 pub const FP_FINGER_LAST: FpFinger = 10;
 pub const FP_FINGER_FIRST: FpFinger = 1;
 pub const FP_FINGER_RIGHT_LITTLE: FpFinger = 10;
@@ -321,12 +262,12 @@ pub const FP_FINGER_LEFT_MIDDLE: FpFinger = 3;
 pub const FP_FINGER_LEFT_INDEX: FpFinger = 2;
 pub const FP_FINGER_LEFT_THUMB: FpFinger = 1;
 pub const FP_FINGER_UNKNOWN: FpFinger = 0;
-pub type FpiPrintType = libc::c_uint;
+pub type FpiPrintType = u64;
 pub const FPI_PRINT_NBIS: FpiPrintType = 2;
 pub const FPI_PRINT_RAW: FpiPrintType = 1;
 pub const FPI_PRINT_UNDEFINED: FpiPrintType = 0;
 pub type FpPrint = _FpPrint;
-pub type FpDeviceError = libc::c_uint;
+pub type FpDeviceError = u64;
 pub const FP_DEVICE_ERROR_TOO_HOT: FpDeviceError = 257;
 pub const FP_DEVICE_ERROR_REMOVED: FpDeviceError = 256;
 pub const FP_DEVICE_ERROR_DATA_DUPLICATE: FpDeviceError = 9;
@@ -339,373 +280,329 @@ pub const FP_DEVICE_ERROR_ALREADY_OPEN: FpDeviceError = 3;
 pub const FP_DEVICE_ERROR_NOT_OPEN: FpDeviceError = 2;
 pub const FP_DEVICE_ERROR_NOT_SUPPORTED: FpDeviceError = 1;
 pub const FP_DEVICE_ERROR_GENERAL: FpDeviceError = 0;
-pub type FpiMatchResult = libc::c_int;
+pub type FpiMatchResult = i32;
 pub const FPI_MATCH_SUCCESS: FpiMatchResult = 1;
 pub const FPI_MATCH_FAIL: FpiMatchResult = 0;
 pub const FPI_MATCH_ERROR: FpiMatchResult = -1;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct xyt_struct {
-    pub nrows: libc::c_int,
-    pub xcol: [libc::c_int; 200],
-    pub ycol: [libc::c_int; 200],
-    pub thetacol: [libc::c_int; 200],
+    pub nrows: i32,
+    pub xcol: [i32; 200],
+    pub ycol: [i32; 200],
+    pub thetacol: [i32; 200],
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub union C2RustUnnamed_0 {
-    pub in_0: *mut libc::c_char,
+    pub in_0: *mut u8,
     pub out: *mut gpointer,
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
-pub struct fp_minutiae {
-    pub alloc: libc::c_int,
-    pub num: libc::c_int,
-    pub list: *mut *mut fp_minutia,
+pub struct Minutiae {
+    pub alloc: i32,
+    pub num: i32,
+    pub list: *mut *mut Minutia,
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct minutiae_struct {
-    pub col: [libc::c_int; 4],
+    pub col: [i32; 4],
 }
-pub type MINUTIA = fp_minutia;
+
+pub type MINUTIA = Minutia;
 #[inline]
-unsafe extern "C" fn FP_IS_PRINT(mut ptr: gpointer) -> gboolean {
+unsafe extern "C" fn FP_IS_PRINT(mut ptr: gpointer) -> bool {
     return ({
         let mut __inst: *mut GTypeInstance = ptr as *mut GTypeInstance;
         let mut __t: GType = fp_print_get_type();
-        let mut __r: gboolean = 0;
+        let mut __r: bool = 0;
         if __inst.is_null() {
-            __r = 0 as libc::c_int;
+            __r = 0;
         } else if !((*__inst).g_class).is_null() && (*(*__inst).g_class).g_type == __t {
-            __r = (0 as libc::c_int == 0) as libc::c_int;
+            __r = (0 == 0) as i32;
         } else {
             __r = g_type_check_instance_is_a(__inst, __t);
         }
         __r
     });
 }
+
 #[no_mangle]
-pub unsafe extern "C" fn fpi_print_add_print(
-    mut print: *mut FpPrint,
-    mut add: *mut FpPrint,
-) {
+pub unsafe extern "C" fn fpi_print_add_print(mut print: *mut FpPrint, mut add: *mut FpPrint) {
     if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
-        if (*print).type_0 as libc::c_uint
-            == FPI_PRINT_NBIS as libc::c_int as libc::c_uint
-        {
-            _g_boolean_var_ = 1 as libc::c_int;
+        let mut _g_boolean_var_: i32 = 0;
+        if (*print).type_0 == FPI_PRINT_NBIS as i32 {
+            _g_boolean_var_ = 1;
         } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+            _g_boolean_var_ = 0;
         }
         _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
+    }) as i64
+        != 0
+    {
+    } else {
         g_return_if_fail_warning(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"fpi_print_add_print\0"))
-                .as_ptr(),
-            b"print->type == FPI_PRINT_NBIS\0" as *const u8 as *const libc::c_char,
+            b"libfprint-print",
+            (*::core::mem::transmute::<&[u8; 20], &[u8; 20]>(b"fpi_print_add_print\0")).as_ptr(),
+            b"print->type == FPI_PRINT_NBIS",
         );
         return;
     }
     if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
-        if (*add).type_0 as libc::c_uint == FPI_PRINT_NBIS as libc::c_int as libc::c_uint
-        {
-            _g_boolean_var_ = 1 as libc::c_int;
+        let mut _g_boolean_var_: i32 = 0;
+        if (*add).type_0 == FPI_PRINT_NBIS as i32 {
+            _g_boolean_var_ = 1;
         } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+            _g_boolean_var_ = 0;
         }
         _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
+    }) as i64
+        != 0
+    {
+    } else {
         g_return_if_fail_warning(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"fpi_print_add_print\0"))
-                .as_ptr(),
-            b"add->type == FPI_PRINT_NBIS\0" as *const u8 as *const libc::c_char,
+            b"libfprint-print",
+            (*::core::mem::transmute::<&[u8; 20], &[u8; 20]>(b"fpi_print_add_print\0")).as_ptr(),
+            b"add->type == FPI_PRINT_NBIS",
         );
         return;
     }
     if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
-        if (*(*add).prints).len == 1 as libc::c_int as libc::c_uint {
-            _g_boolean_var_ = 1 as libc::c_int;
+        let mut _g_boolean_var_: i32 = 0;
+        if (*(*add).prints).len == 1 as u64 {
+            _g_boolean_var_ = 1;
         } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+            _g_boolean_var_ = 0;
         }
         _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
+    }) as i64
+        != 0
+    {
+    } else {
         g_assertion_message_expr(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            b"../libfprint/fpi-print.c\0" as *const u8 as *const libc::c_char,
-            52 as libc::c_int,
-            (*::core::mem::transmute::<
-                &[u8; 20],
-                &[libc::c_char; 20],
-            >(b"fpi_print_add_print\0"))
-                .as_ptr(),
-            b"add->prints->len == 1\0" as *const u8 as *const libc::c_char,
+            b"libfprint-print",
+            b"../libfprint/fpi-print.c",
+            52,
+            (*::core::mem::transmute::<&[u8; 20], &[u8; 20]>(b"fpi_print_add_print\0")).as_ptr(),
+            b"add->prints->len == 1",
         );
     }
     g_ptr_array_add(
         (*print).prints,
         ({
             g_memdup2(
-                *((*(*add).prints).pdata).offset(0 as libc::c_int as isize)
-                    as gconstpointer,
-                ::core::mem::size_of::<xyt_struct>() as libc::c_ulong,
+                *((*(*add).prints).pdata).offset(0) as gconstpointer,
+                ::core::mem::size_of::<xyt_struct>() as u64,
             )
         }),
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn fpi_print_set_type(
-    mut print: *mut FpPrint,
-    mut type_0: FpiPrintType,
-) {
+pub unsafe extern "C" fn fpi_print_set_type(mut print: *mut FpPrint, mut type_0: FpiPrintType) {
     if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
+        let mut _g_boolean_var_: i32 = 0;
         if FP_IS_PRINT(print as gpointer) != 0 {
-            _g_boolean_var_ = 1 as libc::c_int;
+            _g_boolean_var_ = 1;
         } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+            _g_boolean_var_ = 0;
         }
         _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
+    }) as i64
+        != 0
+    {
+    } else {
         g_return_if_fail_warning(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"fpi_print_set_type\0"))
-                .as_ptr(),
-            b"FP_IS_PRINT (print)\0" as *const u8 as *const libc::c_char,
+            b"libfprint-print",
+            (*::core::mem::transmute::<&[u8; 19], &[u8; 19]>(b"fpi_print_set_type\0")).as_ptr(),
+            b"FP_IS_PRINT (print)",
         );
         return;
     }
     if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
-        if (*print).type_0 as libc::c_uint
-            == FPI_PRINT_UNDEFINED as libc::c_int as libc::c_uint
-        {
-            _g_boolean_var_ = 1 as libc::c_int;
+        let mut _g_boolean_var_: i32 = 0;
+        if (*print).type_0 == FPI_PRINT_UNDEFINED as i32 {
+            _g_boolean_var_ = 1;
         } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+            _g_boolean_var_ = 0;
         }
         _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
+    }) as i64
+        != 0
+    {
+    } else {
         g_return_if_fail_warning(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 19],
-                &[libc::c_char; 19],
-            >(b"fpi_print_set_type\0"))
-                .as_ptr(),
-            b"print->type == FPI_PRINT_UNDEFINED\0" as *const u8 as *const libc::c_char,
+            b"libfprint-print",
+            (*::core::mem::transmute::<&[u8; 19], &[u8; 19]>(b"fpi_print_set_type\0")).as_ptr(),
+            b"print->type == FPI_PRINT_UNDEFINED",
         );
         return;
     }
     (*print).type_0 = type_0;
-    if (*print).type_0 as libc::c_uint == FPI_PRINT_NBIS as libc::c_int as libc::c_uint {
+    if (*print).type_0 == FPI_PRINT_NBIS as i32 {
         if !(({
-            let mut _g_boolean_var_: libc::c_int = 0;
+            let mut _g_boolean_var_: i32 = 0;
             if ((*print).prints).is_null() {
-                _g_boolean_var_ = 1 as libc::c_int;
+                _g_boolean_var_ = 1;
             } else {
-                _g_boolean_var_ = 0 as libc::c_int;
+                _g_boolean_var_ = 0;
             }
             _g_boolean_var_
-        }) as libc::c_long != 0)
+        }) as i64
+            != 0)
         {
             g_assertion_message(
-                b"libfprint-print\0" as *const u8 as *const libc::c_char,
-                b"../libfprint/fpi-print.c\0" as *const u8 as *const libc::c_char,
-                76 as libc::c_int,
-                (*::core::mem::transmute::<
-                    &[u8; 19],
-                    &[libc::c_char; 19],
-                >(b"fpi_print_set_type\0"))
-                    .as_ptr(),
-                b"'print->prints' should be NULL\0" as *const u8 as *const libc::c_char,
+                b"libfprint-print",
+                b"../libfprint/fpi-print.c",
+                76,
+                (*::core::mem::transmute::<&[u8; 19], &[u8; 19]>(b"fpi_print_set_type\0")).as_ptr(),
+                b"'print->prints' should be NULL",
             );
         }
-        (*print)
-            .prints = g_ptr_array_new_with_free_func(
-            Some(g_free as unsafe extern "C" fn(gpointer) -> ()),
-        );
+        (*print).prints =
+            g_ptr_array_new_with_free_func(Some(g_free as unsafe extern "C" fn(gpointer) -> ()));
     }
     g_object_notify(
-        g_type_check_instance_cast(
-            print as *mut GTypeInstance,
-            ((20 as libc::c_int) << 2 as libc::c_int) as GType,
-        ) as *mut libc::c_void as *mut GObject,
-        b"fpi-type\0" as *const u8 as *const libc::c_char,
+        g_type_check_instance_cast(print as *mut GTypeInstance, ((20) << 2) as GType)
+            as *mut libc::c_void as *mut GObject,
+        b"fpi-type",
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn fpi_print_set_device_stored(
     mut print: *mut FpPrint,
-    mut device_stored: gboolean,
+    mut device_stored: bool,
 ) {
     if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
+        let mut _g_boolean_var_: i32 = 0;
         if FP_IS_PRINT(print as gpointer) != 0 {
-            _g_boolean_var_ = 1 as libc::c_int;
+            _g_boolean_var_ = 1;
         } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+            _g_boolean_var_ = 0;
         }
         _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
+    }) as i64
+        != 0
+    {
+    } else {
         g_return_if_fail_warning(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"fpi_print_set_device_stored\0"))
+            b"libfprint-print",
+            (*::core::mem::transmute::<&[u8; 28], &[u8; 28]>(b"fpi_print_set_device_stored\0"))
                 .as_ptr(),
-            b"FP_IS_PRINT (print)\0" as *const u8 as *const libc::c_char,
+            b"FP_IS_PRINT (print)",
         );
         return;
     }
     (*print).device_stored = device_stored;
     g_object_notify(
-        g_type_check_instance_cast(
-            print as *mut GTypeInstance,
-            ((20 as libc::c_int) << 2 as libc::c_int) as GType,
-        ) as *mut libc::c_void as *mut GObject,
-        b"device-stored\0" as *const u8 as *const libc::c_char,
+        g_type_check_instance_cast(print as *mut GTypeInstance, ((20) << 2) as GType)
+            as *mut libc::c_void as *mut GObject,
+        b"device-stored",
     );
 }
+
 unsafe extern "C" fn minutiae_to_xyt(
-    mut minutiae: *mut fp_minutiae,
-    mut bwidth: libc::c_int,
-    mut bheight: libc::c_int,
+    mut minutiae: *mut Minutiae,
+    mut bwidth: i32,
+    mut bheight: i32,
     mut xyt: *mut xyt_struct,
 ) {
-    let mut i: libc::c_int = 0;
-    let mut minutia: *mut fp_minutia = 0 as *mut fp_minutia;
+    let mut i: i32 = 0;
+    let mut minutia: *mut Minutia = 0 as *mut Minutia;
     let mut c: [minutiae_struct; 1000] = [minutiae_struct { col: [0; 4] }; 1000];
-    let mut nmin: libc::c_int = if (*minutiae).num < 200 as libc::c_int {
+    let mut nmin: i32 = if (*minutiae).num < 200 {
         (*minutiae).num
     } else {
-        200 as libc::c_int
+        200
     };
-    i = 0 as libc::c_int;
+    i = 0;
     while i < nmin {
         minutia = *((*minutiae).list).offset(i as isize);
         lfs2nist_minutia_XYT(
             &mut *((*c.as_mut_ptr().offset(i as isize)).col)
                 .as_mut_ptr()
-                .offset(0 as libc::c_int as isize),
+                .offset(0),
             &mut *((*c.as_mut_ptr().offset(i as isize)).col)
                 .as_mut_ptr()
-                .offset(1 as libc::c_int as isize),
+                .offset(1),
             &mut *((*c.as_mut_ptr().offset(i as isize)).col)
                 .as_mut_ptr()
-                .offset(2 as libc::c_int as isize),
+                .offset(2),
             minutia,
             bwidth,
             bheight,
         );
-        c[i as usize]
-            .col[3 as libc::c_int
-            as usize] = (if (*minutia).reliability * 100.0f64
-            < 0 as libc::c_int as libc::c_double
-        {
+        c[i as usize].col[3] = (if (*minutia).reliability * 100.0f64 < 0 as f32 {
             (*minutia).reliability * 100.0f64 - 0.5f64
         } else {
             (*minutia).reliability * 100.0f64 + 0.5f64
-        }) as libc::c_int;
-        if c[i as usize].col[2 as libc::c_int as usize] > 180 as libc::c_int {
-            c[i as usize].col[2 as libc::c_int as usize] -= 360 as libc::c_int;
+        }) as i32;
+        if c[i as usize].col[2] > 180 {
+            c[i as usize].col[2] -= 360;
         }
         i += 1;
     }
     qsort(
         &mut c as *mut [minutiae_struct; 1000] as *mut libc::c_void,
-        nmin as size_t,
-        ::core::mem::size_of::<minutiae_struct>() as libc::c_ulong,
-        Some(
-            sort_x_y
-                as unsafe extern "C" fn(
-                    *const libc::c_void,
-                    *const libc::c_void,
-                ) -> libc::c_int,
-        ),
+        nmin as u64,
+        ::core::mem::size_of::<minutiae_struct>() as u64,
+        Some(sort_x_y as unsafe extern "C" fn(*const libc::c_void, *const libc::c_void) -> i32),
     );
-    i = 0 as libc::c_int;
+    i = 0;
     while i < nmin {
-        (*xyt).xcol[i as usize] = c[i as usize].col[0 as libc::c_int as usize];
-        (*xyt).ycol[i as usize] = c[i as usize].col[1 as libc::c_int as usize];
-        (*xyt).thetacol[i as usize] = c[i as usize].col[2 as libc::c_int as usize];
+        (*xyt).xcol[i as usize] = c[i as usize].col[0];
+        (*xyt).ycol[i as usize] = c[i as usize].col[1];
+        (*xyt).thetacol[i as usize] = c[i as usize].col[2];
         i += 1;
     }
     (*xyt).nrows = nmin;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn fpi_print_add_from_image(
     mut print: *mut FpPrint,
     mut image: *mut FpImage,
     mut error: *mut *mut GError,
-) -> gboolean {
+) -> bool {
     let mut minutiae: *mut GPtrArray = 0 as *mut GPtrArray;
-    let mut _minutiae: fp_minutiae = fp_minutiae {
+    let mut _minutiae: Minutiae = Minutiae {
         alloc: 0,
         num: 0,
-        list: 0 as *mut *mut fp_minutia,
+        list: 0 as *mut *mut Minutia,
     };
     let mut xyt: *mut xyt_struct = 0 as *mut xyt_struct;
-    if (*print).type_0 as libc::c_uint != FPI_PRINT_NBIS as libc::c_int as libc::c_uint
-        || image.is_null()
-    {
+    if (*print).type_0 != FPI_PRINT_NBIS as i32 || image.is_null() {
         g_set_error(
             error,
             g_io_error_quark(),
-            G_IO_ERROR_INVALID_DATA as libc::c_int,
-            b"Cannot add print data from image!\0" as *const u8 as *const libc::c_char,
+            G_IO_ERROR_INVALID_DATA as i32,
+            b"Cannot add print data from image!",
         );
-        return 0 as libc::c_int;
+        return 0;
     }
     minutiae = fp_image_get_minutiae(image);
-    if minutiae.is_null() || (*minutiae).len == 0 as libc::c_int as libc::c_uint {
+    if minutiae.is_null() || (*minutiae).len == 0 as u64 {
         g_set_error(
             error,
             g_io_error_quark(),
-            G_IO_ERROR_INVALID_DATA as libc::c_int,
-            b"No minutiae found in image or not yet detected!\0" as *const u8
-                as *const libc::c_char,
+            G_IO_ERROR_INVALID_DATA as i32,
+            b"No minutiae found in image or not yet detected!",
         );
-        return 0 as libc::c_int;
+        return 0;
     }
-    _minutiae.num = (*minutiae).len as libc::c_int;
-    _minutiae.list = (*minutiae).pdata as *mut *mut fp_minutia;
-    _minutiae.alloc = (*minutiae).len as libc::c_int;
+    _minutiae.num = (*minutiae).len as i32;
+    _minutiae.list = (*minutiae).pdata as *mut *mut Minutia;
+    _minutiae.alloc = (*minutiae).len as i32;
     xyt = ({
-        let mut __n: gsize = 1 as libc::c_int as gsize;
-        let mut __s: gsize = ::core::mem::size_of::<xyt_struct>() as libc::c_ulong;
+        let mut __n: u64 = 1 as u64;
+        let mut __s: u64 = ::core::mem::size_of::<xyt_struct>() as u64;
         let mut __p: gpointer = 0 as *mut libc::c_void;
-        if __s == 1 as libc::c_int as libc::c_ulong {
+        if __s == 1 as u64 {
             __p = g_malloc0(__n);
         } else if 0 != 0
-            && (__s == 0 as libc::c_int as libc::c_ulong
+            && (__s == 0 as u64
                 || __n
-                    <= (9223372036854775807 as libc::c_long as libc::c_ulong)
-                        .wrapping_mul(2 as libc::c_ulong)
-                        .wrapping_add(1 as libc::c_ulong)
+                    <= (9223372036854775807 as u64)
+                        .wrapping_mul(2)
+                        .wrapping_add(1)
                         .wrapping_div(__s))
         {
             __p = g_malloc0(__n.wrapping_mul(__s));
@@ -716,20 +613,18 @@ pub unsafe extern "C" fn fpi_print_add_from_image(
     }) as *mut xyt_struct;
     minutiae_to_xyt(
         &mut _minutiae,
-        (*image).width as libc::c_int,
-        (*image).height as libc::c_int,
+        (*image).width as i32,
+        (*image).height as i32,
         xyt,
     );
     g_ptr_array_add((*print).prints, xyt as gpointer);
-    let mut _pp: C2RustUnnamed_0 = C2RustUnnamed_0 {
-        in_0: 0 as *mut libc::c_char,
-    };
+    let mut _pp: C2RustUnnamed_0 = C2RustUnnamed_0 { in_0: 0 as *mut u8 };
     let mut _p: gpointer = 0 as *mut libc::c_void;
-    let mut _destroy: GDestroyNotify = ::core::mem::transmute::<
-        Option::<unsafe extern "C" fn(gpointer) -> ()>,
-        GDestroyNotify,
-    >(Some(g_object_unref as unsafe extern "C" fn(gpointer) -> ()));
-    _pp.in_0 = &mut (*print).image as *mut *mut FpImage as *mut libc::c_char;
+    let mut _destroy: GDestroyNotify =
+        ::core::mem::transmute::<Option<unsafe extern "C" fn(gpointer) -> ()>, GDestroyNotify>(
+            Some(g_object_unref as unsafe extern "C" fn(gpointer) -> ()),
+        );
+    _pp.in_0 = &mut (*print).image as *mut *mut FpImage as *mut u8;
     _p = *_pp.out;
     if !_p.is_null() {
         *_pp.out = 0 as *mut libc::c_void;
@@ -737,57 +632,49 @@ pub unsafe extern "C" fn fpi_print_add_from_image(
     }
     (*print).image = g_object_ref(image as gpointer) as *mut FpImage;
     g_object_notify(
-        g_type_check_instance_cast(
-            print as *mut GTypeInstance,
-            ((20 as libc::c_int) << 2 as libc::c_int) as GType,
-        ) as *mut libc::c_void as *mut GObject,
-        b"image\0" as *const u8 as *const libc::c_char,
+        g_type_check_instance_cast(print as *mut GTypeInstance, ((20) << 2) as GType)
+            as *mut libc::c_void as *mut GObject,
+        b"image",
     );
-    return (0 as libc::c_int == 0) as libc::c_int;
+    return (0 == 0) as i32;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn fpi_print_bz3_match(
     mut template: *mut FpPrint,
     mut print: *mut FpPrint,
-    mut bz3_threshold: gint,
+    mut bz3_threshold: i32,
     mut error: *mut *mut GError,
 ) -> FpiMatchResult {
     let mut pstruct: *mut xyt_struct = 0 as *mut xyt_struct;
-    let mut probe_len: gint = 0;
-    let mut i: gint = 0;
-    if (*template).type_0 as libc::c_uint
-        != FPI_PRINT_NBIS as libc::c_int as libc::c_uint
-        || (*print).type_0 as libc::c_uint
-            != FPI_PRINT_NBIS as libc::c_int as libc::c_uint
-    {
+    let mut probe_len: i32 = 0;
+    let mut i: i32 = 0;
+    if (*template).type_0 != FPI_PRINT_NBIS as i32 || (*print).type_0 != FPI_PRINT_NBIS as i32 {
         *error = fpi_device_error_new_msg(
             FP_DEVICE_ERROR_NOT_SUPPORTED,
-            b"It is only possible to match NBIS type print data\0" as *const u8
-                as *const libc::c_char,
+            b"It is only possible to match NBIS type print data",
         );
         return FPI_MATCH_ERROR;
     }
-    if (*(*print).prints).len != 1 as libc::c_int as libc::c_uint {
+    if (*(*print).prints).len != 1 as u64 {
         *error = fpi_device_error_new_msg(
             FP_DEVICE_ERROR_GENERAL,
-            b"New print contains more than one print!\0" as *const u8
-                as *const libc::c_char,
+            b"New print contains more than one print!",
         );
         return FPI_MATCH_ERROR;
     }
-    pstruct = *((*(*print).prints).pdata).offset(0 as libc::c_int as isize)
-        as *mut xyt_struct;
+    pstruct = *((*(*print).prints).pdata).offset(0) as *mut xyt_struct;
     probe_len = bozorth_probe_init(pstruct);
-    i = 0 as libc::c_int;
-    while (i as libc::c_uint) < (*(*template).prints).len {
+    i = 0;
+    while (i as u64) < (*(*template).prints).len {
         let mut gstruct: *mut xyt_struct = 0 as *mut xyt_struct;
-        let mut score: gint = 0;
+        let mut score: i32 = 0;
         gstruct = *((*(*template).prints).pdata).offset(i as isize) as *mut xyt_struct;
         score = bozorth_to_gallery(probe_len, pstruct, gstruct);
         g_log(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
+            b"libfprint-print",
             G_LOG_LEVEL_DEBUG,
-            b"score %d/%d\0" as *const u8 as *const libc::c_char,
+            b"score %d/%d",
             score,
             bz3_threshold,
         );
@@ -799,135 +686,102 @@ pub unsafe extern "C" fn fpi_print_bz3_match(
     return FPI_MATCH_FAIL;
 }
 #[no_mangle]
-pub unsafe extern "C" fn fpi_print_generate_user_id(
-    mut print: *mut FpPrint,
-) -> *mut gchar {
-    let mut username: *const gchar = 0 as *const gchar;
-    let mut user_id: *mut gchar = 0 as *mut gchar;
+pub unsafe extern "C" fn fpi_print_generate_user_id(mut print: *mut FpPrint) -> *mut u8 {
+    let mut username: *const u8 = 0 as *const u8;
+    let mut user_id: *mut u8 = 0 as *mut u8;
     let mut date: *const GDate = 0 as *const GDate;
-    let mut y: gint = 0 as libc::c_int;
-    let mut m: gint = 0 as libc::c_int;
-    let mut d: gint = 0 as libc::c_int;
-    let mut rand_id: gint32 = 0 as libc::c_int;
+    let mut y: i32 = 0;
+    let mut m: i32 = 0;
+    let mut d: i32 = 0;
+    let mut rand_id: i32 = 0;
+
     if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
+        let mut _g_boolean_var_: i32 = 0;
         if !print.is_null() {
-            _g_boolean_var_ = 1 as libc::c_int;
+            _g_boolean_var_ = 1;
         } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+            _g_boolean_var_ = 0;
         }
         _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
+    }) as i64
+        != 0
+    {
+    } else {
         g_assertion_message_expr(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            b"../libfprint/fpi-print.c\0" as *const u8 as *const libc::c_char,
-            282 as libc::c_int,
-            (*::core::mem::transmute::<
-                &[u8; 27],
-                &[libc::c_char; 27],
-            >(b"fpi_print_generate_user_id\0"))
+            b"libfprint-print",
+            b"../libfprint/fpi-print.c",
+            282,
+            (*::core::mem::transmute::<&[u8; 27], &[u8; 27]>(b"fpi_print_generate_user_id\0"))
                 .as_ptr(),
-            b"print\0" as *const u8 as *const libc::c_char,
+            b"print",
         );
     }
     date = fp_print_get_enroll_date(print);
     if !date.is_null() && g_date_valid(date) != 0 {
-        y = g_date_get_year(date) as gint;
-        m = g_date_get_month(date) as gint;
-        d = g_date_get_day(date) as gint;
+        y = g_date_get_year(date) as i32;
+        m = g_date_get_month(date) as i32;
+        d = g_date_get_day(date) as i32;
     }
     username = fp_print_get_username(print);
     if username.is_null() {
-        username = b"nobody\0" as *const u8 as *const libc::c_char;
+        username = b"nobody";
     }
-    if g_strcmp0(
-        g_getenv(b"FP_DEVICE_EMULATION\0" as *const u8 as *const libc::c_char),
-        b"1\0" as *const u8 as *const libc::c_char,
-    ) == 0 as libc::c_int
-    {
-        rand_id = 0 as libc::c_int;
+
+    if Ok("1") == env::var("FP_DEVICE_EMULATION") {
+        rand_id = 0;
     } else {
-        rand_id = g_random_int() as gint32;
+        rand_id = rand::random();
     }
+
     user_id = g_strdup_printf(
-        b"FP1-%04d%02d%02d-%X-%08X-%s\0" as *const u8 as *const libc::c_char,
+        b"FP1-%04d%02d%02d-%X-%08X-%s",
         y,
         m,
         d,
-        fp_print_get_finger(print) as libc::c_uint,
+        fp_print_get_finger(print) as u64,
         rand_id,
         username,
     );
     return user_id;
 }
-#[no_mangle]
-pub unsafe extern "C" fn fpi_print_fill_from_user_id(
-    mut print: *mut FpPrint,
-    mut user_id: *const libc::c_char,
-) -> gboolean {
-    if ({
-        let mut _g_boolean_var_: libc::c_int = 0;
-        if !user_id.is_null() {
-            _g_boolean_var_ = 1 as libc::c_int;
-        } else {
-            _g_boolean_var_ = 0 as libc::c_int;
+
+impl FpPrint {
+    /// Parses info from FP1-{date}-{finger}-{username} ID format
+    pub fn fill_from_user_id(mut self, user_id: Into<String>) -> bool {
+        let user_id: String = user_id.into();
+
+        if !(user_id.starts_with("FP1-") && user_id.len() >= 24) {
+            return false;
         }
-        _g_boolean_var_
-    }) as libc::c_long != 0
-    {} else {
-        g_return_if_fail_warning(
-            b"libfprint-print\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<
-                &[u8; 28],
-                &[libc::c_char; 28],
-            >(b"fpi_print_fill_from_user_id\0"))
-                .as_ptr(),
-            b"user_id\0" as *const u8 as *const libc::c_char,
-        );
-        return 0 as libc::c_int;
+
+        let split = user_id.split("-");
+
+        split
+            .nth(1)
+            .map(|encoded_date| encoded_date.parse::<u32>())
+            .map(|encoded_date| {
+                if encoded_date > 0 {
+                    let d = encoded_date % 100;
+                    let m = encoded_date / 100 % 100;
+                    let y = encoded_date / 10000;
+                    NaiveDate::from_ymd(y, m, d)
+                } else {
+                    Utc::now().date_naive()
+                }
+            })
+            .map(self.set_enroll_date);
+
+        split
+            .nth(2)
+            .map(|finger| finger.parse::<u32>())
+            .map(FpFinger::try_from)
+            .map(self.set_finger);
+
+        split
+            .nth(3)
+            .filter(|username| username.len() > 0 && username != "nobody")
+            .map(self.set_username);
+
+        return true;
     }
-    if g_str_has_prefix(user_id, b"FP1-\0" as *const u8 as *const libc::c_char) != 0
-        && strlen(user_id) >= 24 as libc::c_int as libc::c_ulong
-        && *user_id.offset(12 as libc::c_int as isize) as libc::c_int == '-' as i32
-        && *user_id.offset(14 as libc::c_int as isize) as libc::c_int == '-' as i32
-        && *user_id.offset(23 as libc::c_int as isize) as libc::c_int == '-' as i32
-    {
-        let mut copy: *mut gchar = g_strdup(user_id);
-        let mut date: GDate_autoptr = 0 as GDate_autoptr;
-        let mut date_ymd: gint32 = 0;
-        let mut finger: gint32 = 0;
-        let mut username: *mut gchar = 0 as *mut gchar;
-        *copy.offset(12 as libc::c_int as isize) = '\0' as i32 as gchar;
-        date_ymd = g_ascii_strtod(
-            copy.offset(4 as libc::c_int as isize),
-            0 as *mut *mut gchar,
-        ) as gint32;
-        if date_ymd > 0 as libc::c_int {
-            date = g_date_new_dmy(
-                (date_ymd % 100 as libc::c_int) as GDateDay,
-                (date_ymd / 100 as libc::c_int % 100 as libc::c_int) as GDateMonth,
-                (date_ymd / 10000 as libc::c_int) as GDateYear,
-            );
-        } else {
-            date = g_date_new();
-        }
-        fp_print_set_enroll_date(print, date as *const GDate);
-        *copy.offset(14 as libc::c_int as isize) = '\0' as i32 as gchar;
-        finger = g_ascii_strtoll(
-            copy.offset(13 as libc::c_int as isize),
-            0 as *mut *mut gchar,
-            16 as libc::c_int as guint,
-        ) as gint32;
-        fp_print_set_finger(print, finger as FpFinger);
-        username = copy.offset(24 as libc::c_int as isize);
-        if strlen(username) > 0 as libc::c_int as libc::c_ulong
-            && g_strcmp0(username, b"nobody\0" as *const u8 as *const libc::c_char)
-                != 0 as libc::c_int
-        {
-            fp_print_set_username(print, username);
-        }
-        return (0 as libc::c_int == 0) as libc::c_int;
-    }
-    return 0 as libc::c_int;
 }
