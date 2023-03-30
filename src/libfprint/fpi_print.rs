@@ -1,7 +1,9 @@
 use ::c2rust_bitfields;
 use ::libc;
 use chrono::prelude::*;
+use log::{info, warn};
 use rand::prelude::*;
+use std::convert::Into;
 use std::env;
 use xrono;
 
@@ -69,7 +71,7 @@ extern "C" {
 }
 pub type gpointer = *mut libc::c_void;
 pub type gconstpointer = *const libc::c_void;
-//pub type GDestroyNotify = Option<unsafe extern "C" fn(gpointer) -> ()>;
+//pub type GDestroyNotify = Option<fn(gpointer) -> ()>;
 
 #[derive(Copy, Clone)]
 pub struct _GPtrArray {
@@ -85,8 +87,7 @@ pub struct _GError {
     pub message: *mut u8,
 }
 pub type GError = _GError;
-pub type __compar_fn_t =
-    Option<unsafe extern "C" fn(*const libc::c_void, *const libc::c_void) -> i32>;
+pub type __compar_fn_t = Option<fn(*const libc::c_void, *const libc::c_void) -> i32>;
 pub type GData = _GData;
 pub type GDateYear = u16;
 pub type GDateDay = u8;
@@ -205,7 +206,7 @@ pub struct Minutia {
     pub ey: i32,
     pub direction: i32,
     pub reliability: f32,
-    pub type_0: i32,
+    pub kind: i32,
     pub appearing: i32,
     pub feature_id: i32,
     pub nbrs: *mut i32,
@@ -232,22 +233,6 @@ pub const FPI_IMAGE_H_FLIPPED: FpiImageFlags = 2;
 pub const FPI_IMAGE_V_FLIPPED: FpiImageFlags = 1;
 pub type FpImage = _FpImage;
 
-#[derive(Copy, Clone)]
-pub struct _FpPrint {
-    pub parent_instance: GInitiallyUnowned,
-    pub type_0: FpiPrintType,
-    pub driver: *mut u8,
-    pub device_id: *mut u8,
-    pub device_stored: bool,
-    pub image: *mut FpImage,
-    pub finger: FpFinger,
-    pub username: *mut u8,
-    pub description: *mut u8,
-    pub enroll_date: *mut GDate,
-    pub data: *mut GVariant,
-    pub prints: *mut GPtrArray,
-}
-
 pub type FpFinger = u64;
 pub const FP_FINGER_LAST: FpFinger = 10;
 pub const FP_FINGER_FIRST: FpFinger = 1;
@@ -262,11 +247,13 @@ pub const FP_FINGER_LEFT_MIDDLE: FpFinger = 3;
 pub const FP_FINGER_LEFT_INDEX: FpFinger = 2;
 pub const FP_FINGER_LEFT_THUMB: FpFinger = 1;
 pub const FP_FINGER_UNKNOWN: FpFinger = 0;
-pub type FpiPrintType = u64;
-pub const FPI_PRINT_NBIS: FpiPrintType = 2;
-pub const FPI_PRINT_RAW: FpiPrintType = 1;
-pub const FPI_PRINT_UNDEFINED: FpiPrintType = 0;
-pub type FpPrint = _FpPrint;
+
+pub enum FpiPrintType {
+    NBIS = 2,
+    RAW = 1,
+    UNDEFINED = 0,
+}
+
 pub type FpDeviceError = u64;
 pub const FP_DEVICE_ERROR_TOO_HOT: FpDeviceError = 257;
 pub const FP_DEVICE_ERROR_REMOVED: FpDeviceError = 256;
@@ -309,7 +296,7 @@ pub struct minutiae_struct {
 
 pub type MINUTIA = Minutia;
 #[inline]
-unsafe extern "C" fn FP_IS_PRINT(mut ptr: gpointer) -> bool {
+fn FP_IS_PRINT(mut ptr: gpointer) -> bool {
     return ({
         let mut __inst: *mut GTypeInstance = ptr as *mut GTypeInstance;
         let mut __t: GType = fp_print_get_type();
@@ -325,424 +312,70 @@ unsafe extern "C" fn FP_IS_PRINT(mut ptr: gpointer) -> bool {
     });
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn fpi_print_add_print(mut print: *mut FpPrint, mut add: *mut FpPrint) {
-    if ({
-        let mut _g_boolean_var_: i32 = 0;
-        if (*print).type_0 == FPI_PRINT_NBIS as i32 {
-            _g_boolean_var_ = 1;
-        } else {
-            _g_boolean_var_ = 0;
-        }
-        _g_boolean_var_
-    }) as i64
-        != 0
-    {
-    } else {
-        g_return_if_fail_warning(
-            b"libfprint-print",
-            (*::core::mem::transmute::<&[u8; 20], &[u8; 20]>(b"fpi_print_add_print\0")).as_ptr(),
-            b"print->type == FPI_PRINT_NBIS",
-        );
-        return;
-    }
-    if ({
-        let mut _g_boolean_var_: i32 = 0;
-        if (*add).type_0 == FPI_PRINT_NBIS as i32 {
-            _g_boolean_var_ = 1;
-        } else {
-            _g_boolean_var_ = 0;
-        }
-        _g_boolean_var_
-    }) as i64
-        != 0
-    {
-    } else {
-        g_return_if_fail_warning(
-            b"libfprint-print",
-            (*::core::mem::transmute::<&[u8; 20], &[u8; 20]>(b"fpi_print_add_print\0")).as_ptr(),
-            b"add->type == FPI_PRINT_NBIS",
-        );
-        return;
-    }
-    if ({
-        let mut _g_boolean_var_: i32 = 0;
-        if (*(*add).prints).len == 1 as u64 {
-            _g_boolean_var_ = 1;
-        } else {
-            _g_boolean_var_ = 0;
-        }
-        _g_boolean_var_
-    }) as i64
-        != 0
-    {
-    } else {
-        g_assertion_message_expr(
-            b"libfprint-print",
-            b"../libfprint/fpi-print.c",
-            52,
-            (*::core::mem::transmute::<&[u8; 20], &[u8; 20]>(b"fpi_print_add_print\0")).as_ptr(),
-            b"add->prints->len == 1",
-        );
-    }
-    g_ptr_array_add(
-        (*print).prints,
-        ({
-            g_memdup2(
-                *((*(*add).prints).pdata).offset(0) as gconstpointer,
-                ::core::mem::size_of::<xyt_struct>() as u64,
-            )
-        }),
-    );
-}
-#[no_mangle]
-pub unsafe extern "C" fn fpi_print_set_type(mut print: *mut FpPrint, mut type_0: FpiPrintType) {
-    if ({
-        let mut _g_boolean_var_: i32 = 0;
-        if FP_IS_PRINT(print as gpointer) != 0 {
-            _g_boolean_var_ = 1;
-        } else {
-            _g_boolean_var_ = 0;
-        }
-        _g_boolean_var_
-    }) as i64
-        != 0
-    {
-    } else {
-        g_return_if_fail_warning(
-            b"libfprint-print",
-            (*::core::mem::transmute::<&[u8; 19], &[u8; 19]>(b"fpi_print_set_type\0")).as_ptr(),
-            b"FP_IS_PRINT (print)",
-        );
-        return;
-    }
-    if ({
-        let mut _g_boolean_var_: i32 = 0;
-        if (*print).type_0 == FPI_PRINT_UNDEFINED as i32 {
-            _g_boolean_var_ = 1;
-        } else {
-            _g_boolean_var_ = 0;
-        }
-        _g_boolean_var_
-    }) as i64
-        != 0
-    {
-    } else {
-        g_return_if_fail_warning(
-            b"libfprint-print",
-            (*::core::mem::transmute::<&[u8; 19], &[u8; 19]>(b"fpi_print_set_type\0")).as_ptr(),
-            b"print->type == FPI_PRINT_UNDEFINED",
-        );
-        return;
-    }
-    (*print).type_0 = type_0;
-    if (*print).type_0 == FPI_PRINT_NBIS as i32 {
-        if !(({
-            let mut _g_boolean_var_: i32 = 0;
-            if ((*print).prints).is_null() {
-                _g_boolean_var_ = 1;
-            } else {
-                _g_boolean_var_ = 0;
+impl Minutiae {
+    // TODO:
+    // This is the old version, but wouldn't it be smarter to instead
+    // use the highest quality mintutiae? Possibly just using bz_prune from
+    // upstream?
+    fn to_xyt(mut self, bwidth: i32, bheight: i32) -> *mut xyt_struct {
+        let mut i: i32 = 0;
+        let mut minutia: *mut Minutia = 0 as *mut Minutia;
+
+        let mut c: [minutiae_struct; 1000] = [minutiae_struct { col: [0; 4] }; 1000];
+
+        //self.iter().take(200)
+
+        i = 0;
+        while i < nmin {
+            minutia = *((*minutiae).list).offset(i as isize);
+
+            let (x, y, t) = lfs2nist_minutia_XYT(minutia, bwidth, bheight);
+
+            c[i].col[0] = x;
+            c[i].col[1] = y;
+            c[i].col[2] = t;
+            c[i].col[3] = sround(minutia.reliability * 100.0);
+
+            if c[i].col[2] > 180 {
+                c[i].col[2] -= 360;
             }
-            _g_boolean_var_
-        }) as i64
-            != 0)
-        {
-            g_assertion_message(
-                b"libfprint-print",
-                b"../libfprint/fpi-print.c",
-                76,
-                (*::core::mem::transmute::<&[u8; 19], &[u8; 19]>(b"fpi_print_set_type\0")).as_ptr(),
-                b"'print->prints' should be NULL",
-            );
+
+            i += 1;
         }
-        (*print).prints =
-            g_ptr_array_new_with_free_func(Some(g_free as unsafe extern "C" fn(gpointer) -> ()));
+
+        qsort(
+            &mut c as *mut [minutiae_struct; 1000] as *mut libc::c_void,
+            nmin as u64,
+            ::core::mem::size_of::<minutiae_struct>() as u64,
+            Some(sort_x_y as fn(*const libc::c_void, *const libc::c_void) -> i32),
+        );
+
+        i = 0;
+        while i < nmin {
+            xyt.xcol[i] = c[i].col[0];
+            xyt.ycol[i] = c[i].col[1];
+            xyt.thetacol[i] = c[i].col[2];
+            i += 1;
+        }
+
+        xyt.nrows = nmin;
     }
-    g_object_notify(
-        g_type_check_instance_cast(print as *mut GTypeInstance, ((20) << 2) as GType)
-            as *mut libc::c_void as *mut GObject,
-        b"fpi-type",
-    );
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn fpi_print_set_device_stored(
-    mut print: *mut FpPrint,
-    mut device_stored: bool,
-) {
-    if ({
-        let mut _g_boolean_var_: i32 = 0;
-        if FP_IS_PRINT(print as gpointer) != 0 {
-            _g_boolean_var_ = 1;
-        } else {
-            _g_boolean_var_ = 0;
-        }
-        _g_boolean_var_
-    }) as i64
-        != 0
-    {
-    } else {
-        g_return_if_fail_warning(
-            b"libfprint-print",
-            (*::core::mem::transmute::<&[u8; 28], &[u8; 28]>(b"fpi_print_set_device_stored\0"))
-                .as_ptr(),
-            b"FP_IS_PRINT (print)",
-        );
-        return;
-    }
-    (*print).device_stored = device_stored;
-    g_object_notify(
-        g_type_check_instance_cast(print as *mut GTypeInstance, ((20) << 2) as GType)
-            as *mut libc::c_void as *mut GObject,
-        b"device-stored",
-    );
-}
-
-unsafe extern "C" fn minutiae_to_xyt(
-    mut minutiae: *mut Minutiae,
-    mut bwidth: i32,
-    mut bheight: i32,
-    mut xyt: *mut xyt_struct,
-) {
-    let mut i: i32 = 0;
-    let mut minutia: *mut Minutia = 0 as *mut Minutia;
-    let mut c: [minutiae_struct; 1000] = [minutiae_struct { col: [0; 4] }; 1000];
-    let mut nmin: i32 = if (*minutiae).num < 200 {
-        (*minutiae).num
-    } else {
-        200
-    };
-    i = 0;
-    while i < nmin {
-        minutia = *((*minutiae).list).offset(i as isize);
-        lfs2nist_minutia_XYT(
-            &mut *((*c.as_mut_ptr().offset(i as isize)).col)
-                .as_mut_ptr()
-                .offset(0),
-            &mut *((*c.as_mut_ptr().offset(i as isize)).col)
-                .as_mut_ptr()
-                .offset(1),
-            &mut *((*c.as_mut_ptr().offset(i as isize)).col)
-                .as_mut_ptr()
-                .offset(2),
-            minutia,
-            bwidth,
-            bheight,
-        );
-        c[i as usize].col[3] = (if (*minutia).reliability * 100.0f64 < 0 as f32 {
-            (*minutia).reliability * 100.0f64 - 0.5f64
-        } else {
-            (*minutia).reliability * 100.0f64 + 0.5f64
-        }) as i32;
-        if c[i as usize].col[2] > 180 {
-            c[i as usize].col[2] -= 360;
-        }
-        i += 1;
-    }
-    qsort(
-        &mut c as *mut [minutiae_struct; 1000] as *mut libc::c_void,
-        nmin as u64,
-        ::core::mem::size_of::<minutiae_struct>() as u64,
-        Some(sort_x_y as unsafe extern "C" fn(*const libc::c_void, *const libc::c_void) -> i32),
-    );
-    i = 0;
-    while i < nmin {
-        (*xyt).xcol[i as usize] = c[i as usize].col[0];
-        (*xyt).ycol[i as usize] = c[i as usize].col[1];
-        (*xyt).thetacol[i as usize] = c[i as usize].col[2];
-        i += 1;
-    }
-    (*xyt).nrows = nmin;
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn fpi_print_add_from_image(
-    mut print: *mut FpPrint,
-    mut image: *mut FpImage,
-    mut error: *mut *mut GError,
-) -> bool {
-    let mut minutiae: *mut GPtrArray = 0 as *mut GPtrArray;
-    let mut _minutiae: Minutiae = Minutiae {
-        alloc: 0,
-        num: 0,
-        list: 0 as *mut *mut Minutia,
-    };
-    let mut xyt: *mut xyt_struct = 0 as *mut xyt_struct;
-    if (*print).type_0 != FPI_PRINT_NBIS as i32 || image.is_null() {
-        g_set_error(
-            error,
-            g_io_error_quark(),
-            G_IO_ERROR_INVALID_DATA as i32,
-            b"Cannot add print data from image!",
-        );
-        return 0;
-    }
-    minutiae = fp_image_get_minutiae(image);
-    if minutiae.is_null() || (*minutiae).len == 0 as u64 {
-        g_set_error(
-            error,
-            g_io_error_quark(),
-            G_IO_ERROR_INVALID_DATA as i32,
-            b"No minutiae found in image or not yet detected!",
-        );
-        return 0;
-    }
-    _minutiae.num = (*minutiae).len as i32;
-    _minutiae.list = (*minutiae).pdata as *mut *mut Minutia;
-    _minutiae.alloc = (*minutiae).len as i32;
-    xyt = ({
-        let mut __n: u64 = 1 as u64;
-        let mut __s: u64 = ::core::mem::size_of::<xyt_struct>() as u64;
-        let mut __p: gpointer = 0 as *mut libc::c_void;
-        if __s == 1 as u64 {
-            __p = g_malloc0(__n);
-        } else if 0 != 0
-            && (__s == 0 as u64
-                || __n
-                    <= (9223372036854775807 as u64)
-                        .wrapping_mul(2)
-                        .wrapping_add(1)
-                        .wrapping_div(__s))
-        {
-            __p = g_malloc0(__n.wrapping_mul(__s));
-        } else {
-            __p = g_malloc0_n(__n, __s);
-        }
-        __p
-    }) as *mut xyt_struct;
-    minutiae_to_xyt(
-        &mut _minutiae,
-        (*image).width as i32,
-        (*image).height as i32,
-        xyt,
-    );
-    g_ptr_array_add((*print).prints, xyt as gpointer);
-    let mut _pp: C2RustUnnamed_0 = C2RustUnnamed_0 { in_0: 0 as *mut u8 };
-    let mut _p: gpointer = 0 as *mut libc::c_void;
-    let mut _destroy: GDestroyNotify =
-        ::core::mem::transmute::<Option<unsafe extern "C" fn(gpointer) -> ()>, GDestroyNotify>(
-            Some(g_object_unref as unsafe extern "C" fn(gpointer) -> ()),
-        );
-    _pp.in_0 = &mut (*print).image as *mut *mut FpImage as *mut u8;
-    _p = *_pp.out;
-    if !_p.is_null() {
-        *_pp.out = 0 as *mut libc::c_void;
-        _destroy.expect("non-null function pointer")(_p);
-    }
-    (*print).image = g_object_ref(image as gpointer) as *mut FpImage;
-    g_object_notify(
-        g_type_check_instance_cast(print as *mut GTypeInstance, ((20) << 2) as GType)
-            as *mut libc::c_void as *mut GObject,
-        b"image",
-    );
-    return (0 == 0) as i32;
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn fpi_print_bz3_match(
-    mut template: *mut FpPrint,
-    mut print: *mut FpPrint,
-    mut bz3_threshold: i32,
-    mut error: *mut *mut GError,
-) -> FpiMatchResult {
-    let mut pstruct: *mut xyt_struct = 0 as *mut xyt_struct;
-    let mut probe_len: i32 = 0;
-    let mut i: i32 = 0;
-    if (*template).type_0 != FPI_PRINT_NBIS as i32 || (*print).type_0 != FPI_PRINT_NBIS as i32 {
-        *error = fpi_device_error_new_msg(
-            FP_DEVICE_ERROR_NOT_SUPPORTED,
-            b"It is only possible to match NBIS type print data",
-        );
-        return FPI_MATCH_ERROR;
-    }
-    if (*(*print).prints).len != 1 as u64 {
-        *error = fpi_device_error_new_msg(
-            FP_DEVICE_ERROR_GENERAL,
-            b"New print contains more than one print!",
-        );
-        return FPI_MATCH_ERROR;
-    }
-    pstruct = *((*(*print).prints).pdata).offset(0) as *mut xyt_struct;
-    probe_len = bozorth_probe_init(pstruct);
-    i = 0;
-    while (i as u64) < (*(*template).prints).len {
-        let mut gstruct: *mut xyt_struct = 0 as *mut xyt_struct;
-        let mut score: i32 = 0;
-        gstruct = *((*(*template).prints).pdata).offset(i as isize) as *mut xyt_struct;
-        score = bozorth_to_gallery(probe_len, pstruct, gstruct);
-        g_log(
-            b"libfprint-print",
-            G_LOG_LEVEL_DEBUG,
-            b"score %d/%d",
-            score,
-            bz3_threshold,
-        );
-        if score >= bz3_threshold {
-            return FPI_MATCH_SUCCESS;
-        }
-        i += 1;
-    }
-    return FPI_MATCH_FAIL;
-}
-#[no_mangle]
-pub unsafe extern "C" fn fpi_print_generate_user_id(mut print: *mut FpPrint) -> *mut u8 {
-    let mut username: *const u8 = 0 as *const u8;
-    let mut user_id: *mut u8 = 0 as *mut u8;
-    let mut date: *const GDate = 0 as *const GDate;
-    let mut y: i32 = 0;
-    let mut m: i32 = 0;
-    let mut d: i32 = 0;
-    let mut rand_id: i32 = 0;
-
-    if ({
-        let mut _g_boolean_var_: i32 = 0;
-        if !print.is_null() {
-            _g_boolean_var_ = 1;
-        } else {
-            _g_boolean_var_ = 0;
-        }
-        _g_boolean_var_
-    }) as i64
-        != 0
-    {
-    } else {
-        g_assertion_message_expr(
-            b"libfprint-print",
-            b"../libfprint/fpi-print.c",
-            282,
-            (*::core::mem::transmute::<&[u8; 27], &[u8; 27]>(b"fpi_print_generate_user_id\0"))
-                .as_ptr(),
-            b"print",
-        );
-    }
-    date = fp_print_get_enroll_date(print);
-    if !date.is_null() && g_date_valid(date) != 0 {
-        y = g_date_get_year(date) as i32;
-        m = g_date_get_month(date) as i32;
-        d = g_date_get_day(date) as i32;
-    }
-    username = fp_print_get_username(print);
-    if username.is_null() {
-        username = b"nobody";
-    }
-
-    if Ok("1") == env::var("FP_DEVICE_EMULATION") {
-        rand_id = 0;
-    } else {
-        rand_id = rand::random();
-    }
-
-    user_id = g_strdup_printf(
-        b"FP1-%04d%02d%02d-%X-%08X-%s",
-        y,
-        m,
-        d,
-        fp_print_get_finger(print) as u64,
-        rand_id,
-        username,
-    );
-    return user_id;
+#[derive(Copy, Clone)]
+pub struct FpPrint {
+    //pub parent_instance: GInitiallyUnowned,
+    pub kind: FpiPrintType,
+    pub driver: String,
+    pub device_id: String,
+    pub device_stored: bool,
+    pub image: *mut FpImage,
+    pub finger: FpFinger,
+    pub username: String,
+    pub description: String,
+    pub enroll_date: NaiveDate,
+    pub data: *mut GVariant,
+    pub prints: Vec<xyt_struct>,
 }
 
 impl FpPrint {
@@ -778,10 +411,201 @@ impl FpPrint {
             .map(self.set_finger);
 
         split
-            .nth(3)
+            .nth(4)
             .filter(|username| username.len() > 0 && username != "nobody")
             .map(self.set_username);
 
         return true;
+    }
+
+    pub fn generate_user_id(self) -> &str {
+        let date = self.get_enroll_date().unwrap_or(UTC.now().date_naive());
+        let username = self.get_username().unwrap_or("nobody");
+        let rand_id = if Ok("1") == env::var("FP_DEVICE_EMULATION") {
+            0
+        } else {
+            rand::random()
+        };
+
+        user_id = format!(
+            "FP1-{:04}{:02}{:02}-%{:X}-{:08X}-{}",
+            date.year(),
+            date.month(),
+            date.day(),
+            print.finger.into::<u64>,
+            rand_id,
+            username,
+        );
+        return user_id;
+    }
+
+    /// Match the newly scanned print (containing exactly one print) against the
+    /// prints contained in `template` which will have been stored during enrollment.
+    ///
+    /// Both template and print need to be of type FpiPrintType::NBIS for this to
+    /// work.
+    pub fn bz3_match(self, template: &FpPrint, bz3_threshold: i32) -> Result<(), Error> {
+        if template.kind != FpiPrintType::NBIS || self.kind != FpiPrintType::NBIS {
+            return Err(DeviceError::NotSupported(
+                "It is only possible to match NBIS type print data",
+            ));
+        }
+
+        if self.prints.len() != 1 {
+            return Err(DeviceError::General(
+                "New print contains more than one print!",
+            ));
+        }
+
+        pstruct = self.prints.get(0);
+        probe_len = bozorth_probe_init(pstruct);
+
+        for gstruct in template.prints {
+            let score = bozorth_to_gallery(probe_len, pstruct, gstruct);
+
+            debug!("libfprint-print score %{}/%{}", score, bz3_threshold);
+
+            if score >= bz3_threshold {
+                return Ok(());
+            }
+        }
+
+        // No match
+        return Err(());
+    }
+
+    /// Drivers must set this to `true` for any print that is really a handle
+    /// for data that is stored on the device itself.
+    pub fn set_device_stored(mut self, device_stored: bool) {
+        self.device_stored = device_stored;
+    }
+
+    /// This function can only be called exactly once. Drivers should
+    /// call it after creating a new print, or to initialize the template
+    /// print passed during enrollment.
+    pub fn set_type(mut self, kind: FpiPrintType) -> Result<(), Error> {
+        self.kind = kind;
+
+        if self.kind == FpiPrintType::UNDEFINED {
+            return Err("setting a print.kind is allowed only once");
+        }
+
+        if self.kind == FpiPrintType::NBIS {
+            if !self.prints.is_empty() {
+                warn!("`print.prints` should be empty")
+            }
+            self.prints = Vec::new();
+        }
+
+        Ok(())
+    }
+
+    /// Appends the single NBIS print from `add` to the collection of
+    /// prints in print. Both print objects need to be of type FpiPrintType::NBIS
+    /// for this to work.
+    pub fn add_print(mut self, mut add: *mut FpPrint) -> Resutl<(), Error> {
+        if add.kind != FpiPrintType::NBIS || self.kind != FpiPrintType::NBIS {
+            return Err("Both print should be NBIS type");
+        }
+
+        if ({
+            let mut _g_boolean_var_: i32 = 0;
+            if (*(*add).prints).len == 1 as u64 {
+                _g_boolean_var_ = 1;
+            } else {
+                _g_boolean_var_ = 0;
+            }
+            _g_boolean_var_
+        }) as i64
+            != 0
+        {
+        } else {
+            g_assertion_message_expr(
+                b"libfprint-print",
+                b"../libfprint/fpi-print.c",
+                52,
+                (*::core::mem::transmute::<&[u8; 20], &[u8; 20]>(b"fpi_print_add_print\0"))
+                    .as_ptr(),
+                b"add->prints->len == 1",
+            );
+        }
+        g_ptr_array_add(
+            (*print).prints,
+            ({
+                g_memdup2(
+                    *((*(*add).prints).pdata).offset(0) as gconstpointer,
+                    ::core::mem::size_of::<xyt_struct>() as u64,
+                )
+            }),
+        );
+    }
+
+    /// Extracts the minutiae from the given image and adds it to print of
+    /// type FpiPrintType::NBIS.
+    pub fn add_from_image(mut self, image: &FpImage) -> Result<(), Error> {
+        let mut minutiae: *mut GPtrArray = 0 as *mut GPtrArray;
+        let mut _minutiae: Minutiae = Minutiae {
+            alloc: 0,
+            num: 0,
+            list: 0 as *mut *mut Minutia,
+        };
+        let mut xyt: *mut xyt_struct = 0 as *mut xyt_struct;
+        let minutiae = image.get_minutiae();
+
+        minutiae = fp_image_get_minutiae(image);
+        if minutiae.is_null() || (*minutiae).len == 0 as u64 {
+            g_set_error(
+                error,
+                g_io_error_quark(),
+                G_IO_ERROR_INVALID_DATA as i32,
+                b"No minutiae found in image or not yet detected!",
+            );
+            return 0;
+        }
+        _minutiae.num = (*minutiae).len as i32;
+        _minutiae.list = (*minutiae).pdata as *mut *mut Minutia;
+        _minutiae.alloc = (*minutiae).len as i32;
+        xyt = ({
+            let mut __n: u64 = 1 as u64;
+            let mut __s: u64 = ::core::mem::size_of::<xyt_struct>() as u64;
+            let mut __p: gpointer = 0 as *mut libc::c_void;
+            if __s == 1 as u64 {
+                __p = g_malloc0(__n);
+            } else if 0 != 0
+                && (__s == 0 as u64
+                    || __n
+                        <= (9223372036854775807 as u64)
+                            .wrapping_mul(2)
+                            .wrapping_add(1)
+                            .wrapping_div(__s))
+            {
+                __p = g_malloc0(__n.wrapping_mul(__s));
+            } else {
+                __p = g_malloc0_n(__n, __s);
+            }
+            __p
+        }) as *mut xyt_struct;
+        minutiae_to_xyt(
+            &mut _minutiae,
+            (*image).width as i32,
+            (*image).height as i32,
+            xyt,
+        );
+        g_ptr_array_add((*print).prints, xyt as gpointer);
+        let mut _pp: C2RustUnnamed_0 = C2RustUnnamed_0 { in_0: 0 as *mut u8 };
+        let mut _p: gpointer = 0 as *mut libc::c_void;
+        let mut _destroy: GDestroyNotify = ::core::mem::transmute::<
+            Option<fn(gpointer) -> ()>,
+            GDestroyNotify,
+        >(Some(g_object_unref as fn(gpointer) -> ()));
+        _pp.in_0 = &mut (*print).image as *mut *mut FpImage as *mut u8;
+        _p = *_pp.out;
+        if !_p.is_null() {
+            *_pp.out = 0 as *mut libc::c_void;
+            _destroy.expect("non-null function pointer")(_p);
+        }
+        (*print).image = g_object_ref(image as gpointer) as *mut FpImage;
+
+        return (0 == 0) as i32;
     }
 }
